@@ -310,8 +310,43 @@ def resolve_mr_discussion(
 # Entry point
 # ---------------------------------------------------------------------------
 
+class _BearerAuth:
+    """Minimal ASGI middleware that validates Authorization: Bearer <key>."""
+
+    def __init__(self, app, auth_key: str) -> None:
+        self._app = app
+        self._key = auth_key
+
+    async def __call__(self, scope, receive, send) -> None:
+        if scope["type"] == "http":
+            headers = {k.lower(): v for k, v in scope.get("headers", [])}
+            auth = headers.get(b"authorization", b"").decode()
+            if auth != f"Bearer {self._key}":
+                body = b"Unauthorized"
+                await send({"type": "http.response.start", "status": 401,
+                            "headers": [[b"content-length", str(len(body)).encode()]]})
+                await send({"type": "http.response.body", "body": body})
+                return
+        await self._app(scope, receive, send)
+
+
 def main() -> None:
-    mcp.run()
+    transport = os.environ.get("MCP_TRANSPORT", "stdio")
+
+    if transport == "http":
+        import uvicorn
+
+        host = os.environ.get("MCP_HOST", "0.0.0.0")
+        port = int(os.environ.get("MCP_PORT", "8000"))
+        auth_key = os.environ.get("AUTH_KEY", "")
+
+        app = mcp.streamable_http_app()
+        if auth_key:
+            app = _BearerAuth(app, auth_key)
+
+        uvicorn.run(app, host=host, port=port)
+    else:
+        mcp.run()
 
 
 if __name__ == "__main__":
