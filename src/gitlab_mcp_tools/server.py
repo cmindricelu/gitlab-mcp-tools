@@ -331,22 +331,19 @@ class _BearerAuth:
 
 
 def main() -> None:
-    transport = os.environ.get("MCP_TRANSPORT", "stdio")
+    import argparse
 
-    if transport == "http":
-        import uvicorn
+    parser = argparse.ArgumentParser(description="GitLab MCP server")
+    parser.add_argument("--token", help="GitLab personal access token (overrides GITLAB_TOKEN)")
+    parser.add_argument("--url", default=None, help="GitLab base URL (overrides GITLAB_URL)")
+    args = parser.parse_args()
 
-        host = os.environ.get("MCP_HOST", "0.0.0.0")
-        port = int(os.environ.get("MCP_PORT", "8000"))
-        auth_key = os.environ.get("AUTH_KEY", "")
+    if args.token:
+        os.environ["GITLAB_TOKEN"] = args.token
+    if args.url:
+        os.environ["GITLAB_URL"] = args.url
 
-        app = mcp.streamable_http_app()
-        if auth_key:
-            app = _BearerAuth(app, auth_key)
-
-        uvicorn.run(app, host=host, port=port)
-    else:
-        mcp.run()
+    mcp.run()
 
 
 if __name__ == "__main__":
