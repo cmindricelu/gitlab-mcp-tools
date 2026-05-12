@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gitlab-mcp-tools"
+version = "0.1.0"
+description = "MCP server exposing GitLab operations for SDLC agentic AI workflows"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp[cli]>=1.3.0",
+    "requests>=2.31.0",
+]
+
+[project.scripts]
+gitlab-mcp-tools = "gitlab_mcp_tools.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gitlab_mcp_tools"]
